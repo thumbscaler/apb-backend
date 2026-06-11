@@ -7,11 +7,19 @@ const setupMasterPassword = async (req, res) => {
   try {
     const { password } = req.body;
 
-    const existing = await MasterPassword.findOne();
-
-    if (existing) {
+    if (!password) {
       return res.status(400).json({
-        message: "Master password already exists",
+        message: "Password is required",
+      });
+    }
+
+    const existingMasterPassword =
+      await MasterPassword.findOne();
+
+    if (existingMasterPassword) {
+      return res.status(403).json({
+        message:
+          "Master password has already been set and cannot be changed.",
       });
     }
 
@@ -26,11 +34,11 @@ const setupMasterPassword = async (req, res) => {
       passwordHash,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Vault created successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
     });
   }

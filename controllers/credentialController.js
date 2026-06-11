@@ -109,61 +109,81 @@ const getCredential = async (
     }
 };
 
-const deleteCredential =
-    async (req, res) => {
-        try {
-            await Credential.findByIdAndDelete(
+const deleteCredential = async (
+    req,
+    res
+) => {
+    try {
+        const credential =
+            await Credential.findById(
                 req.params.id
             );
 
-            res.json({
-                message:
-                    "Credential deleted successfully",
-            });
-        } catch (error) {
-            res.status(500).json({
-                message: error.message,
+        if (!credential) {
+            return res.status(404).json({
+                message: "Credential not found",
             });
         }
-    };
 
-const updateCredential =
-  async (req, res) => {
+        await credential.deleteOne();
+
+        res.json({
+            message:
+                "Credential deleted successfully",
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
+const updateCredential = async (req, res) => {
     try {
-      const {
-        platform,
-        username,
-        email,
-        password,
-      } = req.body;
+        const credential = await Credential.findById(
+            req.params.id
+        );
 
-      const encryptedPassword =
-        CryptoJS.AES.encrypt(
-          password,
-          process.env
-            .ENCRYPTION_KEY
-        ).toString();
+        if (!credential) {
+            return res.status(404).json({
+                message: "Credential not found",
+            });
+        }
 
-      const updated =
-        await Credential.findByIdAndUpdate(
-          req.params.id,
-          {
+        const {
             platform,
             username,
             email,
-            encryptedPassword,
-          },
-          { new: true }
-        );
+            password,
+        } = req.body;
 
-      res.json(updated);
+        credential.platform =
+            platform ?? credential.platform;
+
+        credential.username =
+            username ?? credential.username;
+
+        credential.email =
+            email ?? credential.email;
+
+        if (password && password.trim() !== "") {
+            credential.encryptedPassword =
+                CryptoJS.AES.encrypt(
+                    password,
+                    process.env.ENCRYPTION_KEY
+                ).toString();
+        }
+
+        const updatedCredential =
+            await credential.save();
+
+        res.json(updatedCredential);
     } catch (error) {
-      res.status(500).json({
-        message:
-          error.message,
-      });
+        res.status(500).json({
+            message: error.message,
+        });
     }
-  };
+};
 
 module.exports = {
     addCredential,
